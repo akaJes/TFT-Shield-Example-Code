@@ -34,6 +34,7 @@
 // LCD Data Bit :    7    6    5    4    3    2    1    0
 // Digital pin #:    7    6    5    4    3    2    9    8
 // Uno port/pin :  PD7  PD6  PD5  PD4  PD3  PD2  PB1  PB0
+// Mega port/pin   PH4  PH3  PE3  PG5  PE5  PE4  PH6  PH5
 
 #define LCD_CS A3 // Chip Select goes to Analog 3
 #define LCD_CD A2 // Command/Data goes to Analog 2
@@ -66,6 +67,25 @@
 
  
  // 
+ #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) //mega
+
+  #define write8inline(d) {                          \
+   PORTE = (PORTE & B11001111) | ((d << 2) & B00110000); \
+   PORTE = (PORTE & B11110111) | ((d >> 2) & B00001000); \
+   PORTG = (PORTG & B11011111) | ((d << 1) & B00100000); \
+   PORTH = (PORTH & B11100111) | ((d >> 3) & B00011000); \
+   PORTH = (PORTH & B10011111) | ((d << 5) & B01100000); \
+  WR_STROBE; }
+  #define read8inline(result) {                       \
+    RD_ACTIVE;                                        \
+    DELAY7;                                           \
+    result = ((PINH & B00011000) << 3) | ((PINE & B00001000) << 2) | ((PING & B00100000) >> 1) |((PINE & B00110000) >> 2) | ((PINH & B01100000) >> 5); \
+    RD_IDLE; }
+  #define setWriteDirInline() { DDRE |=  B00111000; DDRG |=  B00100000; DDRH |= B01111000;}
+  #define setReadDirInline() { DDRE &=  ~B00111000; DDRG &=  ~B00100000; DDRH &= ~B01111000;}
+
+ #else // uno
+
   #define write8inline(d) {                          \
     PORTD = (PORTD & B00000011) | ((d) & B11111100); \
     PORTB = (PORTB & B11111100) | ((d) & B00000011); \
@@ -78,6 +98,7 @@
   #define setWriteDirInline() { DDRD |=  B11111100; DDRB |=  B00000011; }
   #define setReadDirInline()  { DDRD &= ~B11111100; DDRB &= ~B00000011; }
 
+#endif
  
  
 
